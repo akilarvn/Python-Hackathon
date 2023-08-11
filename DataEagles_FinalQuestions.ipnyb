@@ -1,0 +1,311 @@
+# Python Hackathon Questions with Solutions
+
+
+#pip install wordcloud
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+#Importing the dataset
+Patients = pd.read_excel('HospitalDatabase.xlsx', sheet_name = 'Patients')
+EDVisits = pd.read_excel('HospitalDatabase.xlsx', sheet_name = 'EDVisits')
+AmbulatoryVisits = pd.read_excel('HospitalDatabase.xlsx', sheet_name = 'AmbulatoryVisits')
+ReadmissionRegistry = pd.read_excel('HospitalDatabase.xlsx', sheet_name = 'ReAdmissionRegistry')
+Discharges = pd.read_excel('HospitalDatabase.xlsx', sheet_name = 'Discharges')
+Providers = pd.read_excel('HospitalDatabase.xlsx', sheet_name = 'Providers')
+EDUnique= pd.read_excel('HospitalDatabase.xlsx', sheet_name = 'EDUnique')
+
+#Code to check if data is imported properly, delete it before submission
+#Patients.head()
+#EDVisits.head()
+#AmbulatoryVisits.head()
+#ReadmissionRegistry.head()
+#Discharges.head()
+#Providers.head()
+#EDUnique.head()
+
+#Question 1 - Replace all the null values in ReadmissionFlag with 0.
+
+ReadmissionRegistry['ReadmissionFlag'] = ReadmissionRegistry['ReadmissionFlag'].fillna(0)
+ReadmissionRegistry.head()
+
+#Question 2 - Take the ReasonForVisit from user, find the number of patients admitted with that ReasonForVisit
+
+x = input("Please enter reason for visit : ")
+count = 0
+for reason in EDVisits['ReasonForVisit']:
+    if reason == x:
+        count+=1
+print("Number of patients admitted with {} is {}".format(x, count))
+
+#Question 3 - Create a pair plot on whole dataframe by taking parameter "hue" as EDDisposition
+
+sns.pairplot(EDVisits,hue='EDDisposition',palette='GnBu')
+plt.show()
+
+
+#Question 4 - Find the count of Spanish Speaking patients.
+
+count = 0
+for language in Patients['Language']:
+    if language == 'Spanish':
+        count+=1
+print("Count of Spanish speaking patients = {}".format(count))
+
+#Question 5 - Connect to sql and write a query to get list of Provider names whose Providername is starting with letter T. 
+#(Attach screenshots for this question)
+
+#Question 6 - Find the list of patients whose ExpectedLOS is greater than the value given by the user.
+x = int(input("Enter a number for expected LOS : "))
+print("\nAdmission ID\t Patient ID\t ExpectedLOS ")
+for index,row in ReadmissionRegistry.iterrows(): # Method in pandas library to iterate over each row of a dataframe
+    if  row['ExpectedLOS'] > x:
+            y= round(row['ExpectedLOS'],2)
+            print("{}          \t {}   \t         {}".format(row['AdmissionID'], row['PatientID'], y))
+  
+
+
+#Question 7 - Create a bar chart between expectedLOS & Primary diagnosis.
+x=np.array(ReadmissionRegistry['PrimaryDiagnosis'])
+y=np.array(ReadmissionRegistry['ExpectedLOS'])
+
+plt.figure(figsize=(10,6))     #To increase the figure size
+plt.bar(x, y)
+plt.ylabel('Primary Diagnosis')
+plt.xlabel('Expected LOS')
+plt.title('ExpectedLOS by Primary Diagnosis')
+plt.xticks(rotation = 65)      # To rotate labels by an angle to so they do not overlap
+plt.tight_layout()             # To adjust layout of the plot to avoid overlapping labels
+plt.show()
+
+
+#Question 8 - Display patient details where "ReasonForVisit" is either 'Migraine' or 'Pneumonia' and Acuity is 2 or more.
+
+filtered_df = pd.DataFrame() #Initialize the empty data frame
+for index,row in EDVisits.iterrows():
+    if  ((row['ReasonForVisit'] == 'Pneumonia' or row['ReasonForVisit'] == 'Migrane') and row['Acuity'] >=2):
+        filtered_df = filtered_df.append(row, ignore_index = True)
+
+to_display
+
+
+#Question 9 - "Using numpy functions, multiply the following arrays
+
+a=np.arange(6).reshape(2,3)
+print(a)
+b=(np.arange(6).reshape(3,2)).T
+print(b)
+print(a*b)
+
+
+#Question 10 - Display data by splitting age in 4 quartiles and labeling the quartiles.
+from datetime import datetime
+day = datetime.now()
+age_list = []
+#Code to caluculate age from date of birth
+for index, row in Patients.iterrows():
+    dateofbirth = row['DateOfBirth']
+    age_timedelta = (day-dateofbirth)
+    age_years = age_timedelta.days//365.25
+    age_list.append(int(age_years))
+    
+# Calculating quartiles
+
+x = np.percentile(age_list,[25,50,75,100])
+y = ['Q1','Q2', 'Q3', 'Q4']
+plt.bar(x,y )
+#plt.ylabel('')
+plt.title('Age by Quartile')      
+plt.show()
+
+
+#Question 31 - Find the last name of the patients, by getting the first name from the user.
+firstname = input("Enter the first name")
+display(Patients[Patients['FirstName']==firstname]['LastName'])
+
+#Question 32 - Using loc , get the details of the providers where providerId is between 11 and 20 
+#and ProviderSpecialty is Surgery.
+display(Providers.loc[(Providers.ProviderID >=11) & (Providers.ProviderID <=20) & (Providers.ProviderSpecialty =="Surgery")])
+
+#Question 33 - Which reason of visit has maximum mortality rate.
+#Assuming the data is to be fetched from the discharges tables and not readmission registry
+p1 = Discharges[Discharges.ExpectedMortality == Discharges.ExpectedMortality.max()]
+reason = pd.merge(p1,EDUnique, on = 'PatientID')
+display(reason['ReasonForVisit'])
+
+#Question 34 - Find the count of White Spanish Male.
+display(len(Patients.loc[(Patients.Gender == "Male") & (Patients.Race=="White") & (Patients.Language == "Spanish")]))
+
+#Question 35 - Create a jointplot on expected mortality & expected length of stay.
+#Assuming the data is to be fetched from the discharges tables and not readmission registry
+sns.jointplot(data=Discharges, x= 'ExpectedMortality',y='ExpectedLOS',kind= 'scatter',color = 'green')
+plt.show()
+
+#Question 36 - Create a heat map on Readmission Registry table to find correlation between columns values.
+plt.figure(figsize=(8,6))
+sns.set_context('paper',font_scale=1.4)
+Readm_Matrix = ReadmissionRegistry.corr(numeric_only = 'False')
+sns.heatmap(Readm_Matrix, annot=True,cmap='Greens')
+plt.show()
+
+#Question37 - Which PrimaryDiagnosis has the biggest difference between maximum and minimum Expected LOS?
+#Assuming the data is to be fetched from the discharges tables and not readmission registry
+max_elos = Discharges.groupby('PrimaryDiagnosis')['ExpectedLOS'].agg(np.ptp).max()
+max_elos
+s1 = ReadmissionRegistry.groupby('PrimaryDiagnosis')['ExpectedLOS'].agg(np.ptp)
+df1 = s1.to_frame().reset_index()
+df1 = df1.rename(columns= {0: 'PrimaryDiagnosis'})
+df1.index.name = 'index'
+display(df1[df1['ExpectedLOS']==max_elos]['PrimaryDiagnosis'])
+
+#Question 38 - Mortality O:E
+#Assuming the data is to be fetched from the discharges tables and not readmission registry
+df2 = Discharges
+df2['ObservedMortality'] = np.where(df2['DischargeDisposition'] == 'Expired', 1, 0)
+df2
+plt.plot(df2['ObservedMortality'],df2['ExpectedMortality'])
+plt.xlabel("ObservedMortality")
+plt.ylabel("ExpectedMortality")
+plt.title("Mortality O:E")
+plt.show()
+
+#Question 39 - "Create a figure object called fig using plt.figure() **
+#** Use add_axes to add an axis to the figure canvas at [0,0,1,1]. Call this new axis ax. **
+#** Plot (x,y) on that axes and set the labels.
+#Note : You can plot on any x,y set of values."
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+x = [2001,2002,2003,2004,2005]
+y = [15000,10000,17000,7000,9000]
+ax.plot(x,y,marker = 'o',mfc = 'g')
+font1 = {'family':'serif','color':'blue','size':20}
+font2 = {'family':'serif','color':'darkred','size':15}
+plt.xlabel("Year",fontdict = font2)
+plt.ylabel("Sales",fontdict=font2)
+plt.title("Annual Sales",fontdict = font1)
+plt.show()
+
+#Question 40 - Show the records where the ExpectedLos is greater than the difference between the max and min ExpectedLos.
+#Assuming the data is to be fetched from the discharges tables and not readmission registry
+maxelos = Discharges['ExpectedLOS'].max()
+minelos = Discharges['ExpectedLOS'].min()
+diffelos = maxelos -minelos
+display(Discharges[Discharges['ExpectedLOS'] > diffelos])
+
+#Question 41 -Plot a graph to show the distribution of expected length of stay.
+x = np.array(ReadmissionRegistry['ExpectedLOS'])
+plt.hist(x, bins = 20)
+plt.title(' Distribution of Expected LOS')
+plt.show()
+
+
+
+
+#Question 42 - Delete the column 'DischargeDispostion' iteratively.
+#Original Dataframe
+#ReadmissionRegistry.head()
+
+ReadmissionRegistryEdited = ReadmissionRegistry
+x= ['DischargeDisposition']
+for i in x:
+    if i in ReadmissionRegistryEdited:
+        ReadmissionRegistryEdited.drop(i, axis=1, inplace=True)
+        
+ReadmissionRegistryEdited.head()
+
+
+#Question 43 - Find the age prone to get stroke.
+
+
+#Question 44 - Create a bar chart by making list on Acuity & EDDisposition column (with no duplicates) & make the hatchs onto the bar by using set_hatch() method.
+
+EDVisitsUnique = EDVisits.drop_duplicates()
+#type(EDVisitsUnique)
+acuity = EDVisitsUnique['Acuity'].to_numpy()
+EDDisposition = EDVisitsUnique['EDDisposition'].to_numpy()
+x=EDDisposition.tolist()
+y=acuity.tolist()
+bars =plt.bar(x, y, hatch ='//', color = 'lightblue', edgecolor = 'black')
+#bars[0].set_facecolor('b')
+#bars[0].set_edgecolor('r')
+#bars[1].set_facecolor('b')
+#bars[1].set_edgecolor('r')
+#bars[0].set_hatch('/')
+#bars[1].set_hatch('//')
+plt.xlabel('Acuity')
+plt.ylabel('ED Disposition')
+plt.title('Acuity & ED Disposition')
+plt.show()
+
+
+#Question 45 - Usage of Enumeration in Python with any example
+
+#enumerate() is used to add a counter to an iterable object such as list, tuple or dictionary and return it
+# as an enumerating object. Used instead of a counter variable to keep track of number of iterations in loop. 
+
+
+l1 = ['Cariology', 'Orthopedics', 'General Surgery', 'Urology', 'Nephrology', 'Pediatrics', 'ENT', 'Gastroentrology']
+
+l2 = enumerate(l1)
+print(list(l2))       # Notice the default index added in the output of this statement
+print('\n')
+
+l3 = enumerate(l1,4) # Pass the value of the custom index to start index at any other position other than 0.
+print(list(l3)) 
+
+
+#Question 46- Create a heat map to show the correlation between the column values of Edvisits.
+
+plt.figure(figsize=(8,6))
+sns.set_context('paper',font_scale=1.4)
+EDVisits_mx = EDVisits.corr()
+#crash_mx
+sns.heatmap(EDVisits_mx, annot=True,cmap='inferno')
+plt.show()
+
+
+#Question 47 - Create a WordCloud Chart with Reason For Visit.
+from wordcloud import WordCloud
+import nltk                             #NLP library used for text processing, contains text cleaning functions & methods
+#nltk.download('punkt')
+#nltk.download('stopwords')
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+rfv = EDVisits['ReasonForVisit'].to_numpy() # To convert pandas data frame column to numpy array
+rfv_text  = ' '.join([str(i) for i in rfv]) # Creating string object to hold all the element of the array as single text
+
+#Data cleaning
+rfv_text_tokenized = word_tokenize(rfv_text)
+rfv_cleaned = [i for i in rfv_text_tokenized if i.lower() not in stopwords.words('english')]
+
+#Creating the word cloud
+wc = WordCloud(width=900, height=900,
+                      background_color='black',
+                      min_font_size=11).generate(rfv_text)
+plt.figure(figsize=(8, 8), facecolor=None)
+plt.imshow(wc)
+plt.axis("off")
+plt.tight_layout(pad=0)
+plt.show()
+
+
+#Question 48 -List male patients over the age of 60 who have undergone surgery from January-March 2019.
+
+#Merging 2 Dataframes 
+
+# Calculating age from DOB
+
+#Listing male patients with age > 60 who have under gone knee replacement(the only condition as per the data that definitely
+# means patient underwent surgery, rest of the conditions may nor may not require surgery and there is no data in the 
+#dataset regarding that) from January-March 2019
+
+#Question 49 - Create a dataframe with acuity and 
+# EDDisposition as the indices and the count of number of patients as the value.
+
+
+#Question 50 - Using loc, retrieve the firstname and lastname of patients between indices 101 and 200.
+
+
